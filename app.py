@@ -47,60 +47,60 @@ payment_manager = PaymentManager()
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.title(\"⚙️ Controls\")
+    st.title("⚙️ Controls")
     
     # User Profile & Logout
     user = st.session_state.user
     user_email = user.get('email', 'User')
     user_id = user.get('localId') # Firebase UID
     
-    st.markdown(f\"**Logged in as:** {user_email}\")
+    st.markdown(f"**Logged in as:** {user_email}")
     
     # Credit Balance Display
     credits = credit_manager.get_user_credits(user_id)
     if credits is not None:
-        st.metric(\"Credits Remaining\", f\"{credits} 🪙\")
+        st.metric("Credits Remaining", f"{credits} 🪙")
     else:
-        st.warning(\"Unable to load credits.\")
+        st.warning("Unable to load credits.")
         
     # --- CREDIT SHOP ---
-    with st.expander(\"💳 Buy More Credits\"):
-        st.write(\"Choose a package to upgrade your account:\")
+    with st.expander("💳 Buy More Credits"):
+        st.write("Choose a package to upgrade your account:")
         for pkg_id, (price, count) in CREDIT_PACKAGES.items():
-            if st.button(f\"{pkg_id.capitalize()} Pack: {count} credits for ₹{price}\", key=f\"pkg_{pkg_id}\", use_container_width=True):
-                with st.spinner(\"Creating secure payment session...\"):
+            if st.button(f"{pkg_id.capitalize()} Pack: {count} credits for ₹{price}", key=f"pkg_{pkg_id}", use_container_width=True):
+                with st.spinner("Creating secure payment session..."):
                     url = payment_manager.create_checkout_session(user_id, pkg_id)
                     if url:
-                        st.markdown(f\"<a href='{url}' target='_blank' style='text-decoration:none;'>🚀 Click here to pay with Stripe</a>\", unsafe_allow_html=True)
-                        st.info(\"Opening payment page in a new tab...\")
+                        st.markdown(f"<a href='{url}' target='_blank' style='text-decoration:none;'>🚀 Click here to pay with Stripe</a>", unsafe_allow_html=True)
+                        st.info("Opening payment page in a new tab...")
                     else:
-                        st.error(\"Could not create payment session. Please try again.\")
+                        st.error("Could not create payment session. Please try again.")
 
-    if st.button(\"Logout\", use_container_width=True):
+    if st.button("Logout", use_container_width=True):
         sign_out()
         st.rerun()
     
-    st.markdown(\"--- \")
-    channel_id = st.text_input(\"Enter Channel ID\", placeholder=\"UC...\")
+    st.markdown("--- ")
+    channel_id = st.text_input("Enter Channel ID", placeholder="UC...")
 
 
 
     date_range = st.date_input("Date Range")
     analysis_depth = st.select_slider("Analysis Depth", options=["Light", "Deep"], value="Light")
     
-    if st.button(\"🔄 Refresh Data\", use_container_width=True):
+    if st.button("🔄 Refresh Data", use_container_width=True):
         if channel_id:
             # --- CREDIT CHECK ---
             user_id = st.session_state.user.get('localId')
             current_credits = credit_manager.get_user_credits(user_id)
             
             if current_credits is None or current_credits < 1:
-                st.error(\"❌ Insufficient credits! Please purchase more to run analysis.\")
+                st.error("❌ Insufficient credits! Please purchase more to run analysis.")
                 st.stop()
             
-            with st.spinner(f\"Running {analysis_depth} analysis...\"):
+            with st.spinner(f"Running {analysis_depth} analysis..."):
                 try:
-                    fetch_limit = 100 if analysis_depth == \"Deep\" else 50
+                    fetch_limit = 100 if analysis_depth == "Deep" else 50
                     raw_videos = yt_client.get_top_videos(channel_id, limit=fetch_limit)
                     df = pd.DataFrame(raw_videos)
                     df = processor.calculate_engagement(df)
@@ -123,11 +123,11 @@ with st.sidebar:
                     # --- CREDIT DEDUCTION ---
                     credit_manager.deduct_credit(user_id)
                     
-                    st.success(f\"{analysis_depth} Analysis Complete! 1 credit deducted.\")
+                    st.success(f"{analysis_depth} Analysis Complete! 1 credit deducted.")
                 except Exception as e:
-                    st.error(f\"Error: {e}\")
+                    st.error(f"Error: {e}")
         else:
-            st.warning(\"Please enter a Channel ID.\")
+            st.warning("Please enter a Channel ID.")
 
     st.markdown("---")
     if st.button("📥 Export Report", use_container_width=True):
